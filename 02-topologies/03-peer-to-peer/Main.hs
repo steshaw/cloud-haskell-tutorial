@@ -21,7 +21,7 @@ helloProcess = do
 main = do
   [host, port] <- getArgs
 
-  P2P.bootstrap "localhost" "3001" [P2P.makeNodeId "seedhost:9000"] initRemoteTable $
+  P2P.bootstrap host port [P2P.makeNodeId "seedhost:9000"] initRemoteTable $
     helloProcess
 
 {-
