@@ -12,19 +12,20 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-import Network.Transport.TCP (createTransport, defaultTCPParameters)
+import Control.Concurrent
 import Control.Distributed.Process
 import Control.Distributed.Process.Node
 import Control.Distributed.Process.Serializable
 import Data.Binary
 import GHC.Generics
+import Network.Transport.TCP (createTransport, defaultTCPParameters)
 
 newtype Ping = Ping ProcessId
-  deriving Generic
+  deriving (Show, Generic)
 instance Binary Ping
 
 newtype Pong = Pong ProcessId
-  deriving Generic
+  deriving (Show, Generic)
 instance Binary Pong
 
 self :: Process ProcessId
@@ -36,9 +37,18 @@ self = getSelfPid
 ping :: Process ()
 ping = do
   Ping pid <- expect
+  liftIO $ print $ Ping pid
   self' <- self
-  pid ! (Pong self')
+  pid ! Pong self'
   ping
+
+pong :: Process ()
+pong = do
+  Pong pid <- expect
+  liftIO $ print $ Pong pid
+  self' <- self
+  pid ! Ping self'
+  pong
 
 main :: IO ()
 main = do
@@ -49,8 +59,13 @@ main = do
       node <- newLocalNode t initRemoteTable
       runProcess node $ do
         pingPid <- spawnLocal ping
+        pongPid <- spawnLocal ping
         liftIO $ print ("pingPid", pingPid)
+        liftIO $ print ("pongPid", pingPid)
         self' <- self
-        pingPid ! (Ping self')
+        pingPid ! Ping self'
         Pong pid <- expect
         liftIO $ print ("got pong from ", pid)
+        liftIO $ putStrLn "Start ping<->pong"
+        pingPid ! Pong pongPid
+      liftIO $ threadDelay $ 5 * 1000 * 1000
