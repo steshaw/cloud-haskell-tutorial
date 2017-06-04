@@ -59,13 +59,13 @@ main = do
       node <- newLocalNode t initRemoteTable
       runProcess node $ do
         pingPid <- spawnLocal ping
-        pongPid <- spawnLocal ping
+        pongPid <- spawnLocal pong
         liftIO $ print ("pingPid", pingPid)
-        liftIO $ print ("pongPid", pingPid)
+        liftIO $ print ("pongPid", pongPid)
         self' <- self
         pingPid ! Ping self'
         Pong pid <- expect
         liftIO $ print ("got pong from ", pid)
         liftIO $ putStrLn "Start ping<->pong"
-        pingPid ! Pong pongPid
-      liftIO $ threadDelay $ 5 * 1000 * 1000
+        pingPid ! Ping pongPid
+      liftIO $ threadDelay $ 1 * 1000 * 1000
