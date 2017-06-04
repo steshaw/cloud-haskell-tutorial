@@ -15,6 +15,7 @@
 import Network.Transport.TCP (createTransport, defaultTCPParameters)
 import Control.Distributed.Process
 import Control.Distributed.Process.Node
+import Control.Distributed.Process.Serializable
 import Data.Binary
 import GHC.Generics
 
@@ -29,11 +30,14 @@ instance Binary Pong
 self :: Process ProcessId
 self = getSelfPid
 
+(!) :: Serializable a => ProcessId -> a -> Process ()
+(!) = send
+
 ping :: Process ()
 ping = do
   Ping pid <- expect
   self' <- self
-  send pid (Pong self')
+  pid ! (Pong self')
   ping
 
 main :: IO ()
@@ -47,6 +51,6 @@ main = do
         pingPid <- spawnLocal ping
         liftIO $ print ("pingPid", pingPid)
         self' <- self
-        send pingPid (Ping self')
+        pingPid ! (Ping self')
         Pong pid <- expect
         liftIO $ print ("got pong from ", pid)
